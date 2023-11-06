@@ -1,10 +1,27 @@
+'use client';
 import React from "react";
+import { create } from "../actions";
+import { dataForm } from "../actions";
 
 export default function Home() {
-  async function create(formData: FormData) {
-    'use server'
-    
-  }
+ 
+async function createee(formData: FormData) {
+  /* formData
+    { name: 'name', value: '222' },
+    { name: 'email', value: '222@aas.ccd' },
+    { name: 'password', value: '333' },
+    { name: 'confirm-password', value: '444' }
+  */
+  const formdata = Object.fromEntries(formData);
+  const data: dataForm = {
+    name: formdata['name'] as string,
+    email: formdata['email'] as string,
+    password: formdata['password'] as string,
+    confirmPassword: formdata['confirm-password'] as string
+  };
+  console.log(formdata);
+  create(data);
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -14,7 +31,7 @@ export default function Home() {
             Crie sua conta
           </h2>
         </div>
-        <form className="mt-8 space-y-6" action={create} method="POST">
+        <form className="mt-8 space-y-6" action={createee}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="name" className="sr-only">
