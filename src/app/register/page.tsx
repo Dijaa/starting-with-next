@@ -1,27 +1,65 @@
-'use client';
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import { create } from "../actions";
 import { dataForm } from "../actions";
+import { z } from "zod";
+import PasswordField from "../components/PasswordField";
 
 export default function Home() {
- 
-async function createee(formData: FormData) {
-  /* formData
-    { name: 'name', value: '222' },
-    { name: 'email', value: '222@aas.ccd' },
-    { name: 'password', value: '333' },
-    { name: 'confirm-password', value: '444' }
-  */
-  const formdata = Object.fromEntries(formData);
-  const data: dataForm = {
-    name: formdata['name'] as string,
-    email: formdata['email'] as string,
-    password: formdata['password'] as string,
-    confirmPassword: formdata['confirm-password'] as string
+  const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
+
+  const errorMessages = {
+    name: {
+      too_small: "O nome deve ter pelo menos 3 caracteres",
+    },
+    email: {
+      invalid: "O email não é válido",
+    },
+    password: {
+      too_small: "A senha deve ter pelo menos 6 caracteres",
+    },
+    confirmPassword: {
+      too_small: "A confirmação de senha deve ter pelo menos 6 caracteres",
+    },
   };
-  console.log(formdata);
-  create(data);
-}
+
+  const schema = z.object({
+    name: z.string().min(3, errorMessages.name.too_small),
+    email: z.string().email(errorMessages.email.invalid),
+    password: z.string().min(6, errorMessages.password.too_small),
+    confirmPassword: z.string().min(6, errorMessages.confirmPassword.too_small),
+  });
+  function validateFieldPassword(e: React.FocusEvent<HTMLInputElement>): void {
+    const passwordValidation = z
+      .string()
+      .min(6, errorMessages.password.too_small);
+    const passwordParsed = passwordValidation.safeParse(e.target.value);
+    if (!passwordParsed.success) {
+      setPasswordError(true);
+      setPasswordErrorMessage(passwordParsed.error.errors[0].message);
+    } else {
+      setPasswordError(false);
+    }
+  }
+
+  async function validation(formData: FormData) {
+    const formdata = Object.fromEntries(formData);
+    const data: dataForm = {
+      name: formdata["name"] as string,
+      email: formdata["email"] as string,
+      password: formdata["password"] as string,
+      confirmPassword: formdata["confirm-password"] as string,
+    };
+    if (data.password !== data.confirmPassword) {
+    }
+    // valid schema
+    let dataParsed = schema.safeParse(data);
+    if (!dataParsed.success) {
+      // Aqui você pode retornar ou manipular as mensagens de erro
+      console.log(dataParsed.error.errors);
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -31,7 +69,7 @@ async function createee(formData: FormData) {
             Crie sua conta
           </h2>
         </div>
-        <form className="mt-8 space-y-6" action={createee}>
+        <form className="mt-8 space-y-6" action={create}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="name" className="sr-only">
@@ -65,14 +103,10 @@ async function createee(formData: FormData) {
               <label htmlFor="password" className="sr-only">
                 Senha
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm cursor-pointer"
-                placeholder="Senha"
+              <PasswordField
+                error={passwordError}
+                errorMessage={passwordErrorMessage}
+                onBlur={validateFieldPassword}
               />
             </div>
             <div>
