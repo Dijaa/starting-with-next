@@ -8,6 +8,9 @@ import PasswordField from "../components/PasswordField";
 export default function Home() {
   const [passwordError, setPasswordError] = useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState(false);
+  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
+    useState("");
 
   const errorMessages = {
     name: {
@@ -30,16 +33,30 @@ export default function Home() {
     password: z.string().min(6, errorMessages.password.too_small),
     confirmPassword: z.string().min(6, errorMessages.confirmPassword.too_small),
   });
+  const passwordValidation = z
+    .string()
+    .min(6, errorMessages.password.too_small);
   function validateFieldPassword(e: React.FocusEvent<HTMLInputElement>): void {
-    const passwordValidation = z
-      .string()
-      .min(6, errorMessages.password.too_small);
     const passwordParsed = passwordValidation.safeParse(e.target.value);
     if (!passwordParsed.success) {
       setPasswordError(true);
       setPasswordErrorMessage(passwordParsed.error.errors[0].message);
     } else {
       setPasswordError(false);
+    }
+  }
+
+  function validateFieldConfirmPassword(
+    e: React.FocusEvent<HTMLInputElement>
+  ): void {
+    const confirmPasswordParsed = passwordValidation.safeParse(e.target.value);
+    if (!confirmPasswordParsed.success) {
+      setConfirmPasswordError(true);
+      setConfirmPasswordErrorMessage(
+        confirmPasswordParsed.error.errors[0].message
+      );
+    } else {
+      setConfirmPasswordError(false);
     }
   }
 
