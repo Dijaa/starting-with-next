@@ -1,66 +1,99 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { create } from "../actions";
 import { dataForm } from "../actions";
 import { z } from "zod";
 import PasswordField from "../components/PasswordField";
 
-export default function Home() {
-  const [passwordError, setPasswordError] = useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState(false);
-  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
-    useState("");
+type FieldState = {
+  value: string;
+  error: boolean;
+  errorMessage: string;
+};
 
-  const errorMessages = {
-    name: {
-      too_small: "O nome deve ter pelo menos 3 caracteres",
-    },
-    email: {
-      invalid: "O email não é válido",
-    },
-    password: {
-      too_small: "A senha deve ter pelo menos 6 caracteres",
-    },
-    confirmPassword: {
-      too_small: "A confirmação de senha deve ter pelo menos 6 caracteres",
-    },
-  };
+const ERROR_MESSAGES = {
+  name: {
+    too_small: "O nome deve ter pelo menos 3 caracteres",
+  },
+  email: {
+    invalid: "O email não é válido",
+  },
+  password: {
+    too_small: "A senha deve ter pelo menos 6 caracteres",
+  },
+  confirmPassword: {
+    too_small: "A confirmação de senha deve ter pelo menos 6 caracteres",
+  },
+};
+
+const PASSWORD_VALIDATION = z
+  .string()
+  .min(6, ERROR_MESSAGES.password.too_small);
+
+export default function Home() {
+  const [passwordState, setPasswordState] = useState<FieldState>({
+    value: "",
+    error: false,
+    errorMessage: "",
+  });
+
+  const [confirmPasswordState, setConfirmPasswordState] = useState<FieldState>({
+    value: "",
+    error: false,
+    errorMessage: "",
+  });
 
   const schema = z.object({
-    name: z.string().min(3, errorMessages.name.too_small),
-    email: z.string().email(errorMessages.email.invalid),
-    password: z.string().min(6, errorMessages.password.too_small),
-    confirmPassword: z.string().min(6, errorMessages.confirmPassword.too_small),
+    name: z.string().min(3, ERROR_MESSAGES.name.too_small),
+    email: z.string().email(ERROR_MESSAGES.email.invalid),
+    password: z.string().min(6, ERROR_MESSAGES.password.too_small),
+    confirmPassword: z
+      .string()
+      .min(6, ERROR_MESSAGES.confirmPassword.too_small),
   });
-  const passwordValidation = z
-    .string()
-    .min(6, errorMessages.password.too_small);
-  function validateFieldPassword(e: React.FocusEvent<HTMLInputElement>): void {
-    const passwordParsed = passwordValidation.safeParse(e.target.value);
-    if (!passwordParsed.success) {
-      setPasswordError(true);
-      setPasswordErrorMessage(passwordParsed.error.errors[0].message);
-    } else {
-      setPasswordError(false);
-    }
-  }
 
-  function validateFieldConfirmPassword(
-    e: React.FocusEvent<HTMLInputElement>
+  function validateField(
+    e: React.FocusEvent<HTMLInputElement>,
+    setState: React.Dispatch<React.SetStateAction<FieldState>>
   ): void {
-    const confirmPasswordParsed = passwordValidation.safeParse(e.target.value);
-    if (!confirmPasswordParsed.success) {
-      setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage(
-        confirmPasswordParsed.error.errors[0].message
-      );
-    } else {
-      setConfirmPasswordError(false);
+    const parsed = PASSWORD_VALIDATION.safeParse(e.target.value);
+    if (!parsed.success) {
+      setState({
+        value: e.target.value,
+        error: true,
+        errorMessage: parsed.error.errors[0].message,
+      });
+      return;
     }
+    setState({
+      value: e.target.value,
+      error: false,
+      errorMessage: "",
+    });
   }
 
-  async function validation(formData: FormData) {
+  useEffect(() => {
+    if (confirmPasswordState.value.length < 6) return;
+    if (
+      passwordState.value &&
+      confirmPasswordState.value &&
+      passwordState.value !== confirmPasswordState.value
+    ) {
+      setConfirmPasswordState({
+        ...confirmPasswordState,
+        error: true,
+        errorMessage: "Senhas não conferem",
+      });
+      return;
+    }
+    setConfirmPasswordState({
+      ...confirmPasswordState,
+      error: false,
+      errorMessage: "",
+    });
+  }, [passwordState, confirmPasswordState]);
+
+  /*async function validation(formData: FormData) {
     const formdata = Object.fromEntries(formData);
     const data: dataForm = {
       name: formdata["name"] as string,
@@ -77,7 +110,7 @@ export default function Home() {
       console.log(dataParsed.error.errors);
     }
   }
-
+*/
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -121,23 +154,19 @@ export default function Home() {
                 Senha
               </label>
               <PasswordField
-                error={passwordError}
-                errorMessage={passwordErrorMessage}
-                onBlur={validateFieldPassword}
+                error={passwordState.error}
+                errorMessage={passwordState.errorMessage}
+                onBlur={(e) => validateField(e, setPasswordState)}
               />
             </div>
             <div>
               <label htmlFor="confirm-password" className="sr-only">
                 Repita a Senha
               </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm cursor-pointer"
-                placeholder="Repita a Senha"
+              <PasswordField
+                error={confirmPasswordState.error}
+                errorMessage={confirmPasswordState.errorMessage}
+                onBlur={(e) => validateField(e, setConfirmPasswordState)}
               />
             </div>
           </div>
